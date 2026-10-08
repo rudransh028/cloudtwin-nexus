@@ -3,6 +3,8 @@ import { useLocation } from 'react-router-dom';
 import { Search, Bell } from 'lucide-react';
 import { useUiStore } from '@/stores/uiStore';
 
+const API_ORIGIN = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
 export const TopBar = () => {
   const location = useLocation();
   const { notifications, currentProject } = useUiStore();
@@ -12,7 +14,7 @@ export const TopBar = () => {
   useEffect(() => {
     const check = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/v1/twin/status`);
+        const res = await fetch(`${API_ORIGIN}/api/v1/twin/status`);
         if (res.ok) {
           setIsConnected(true);
           const data = await res.json();
