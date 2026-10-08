@@ -30,9 +30,11 @@ import {
   mockSimulationResults
 } from '@/data/mockData';
 
+const API_ORIGIN = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
 class ApiService {
   private useRealApi: boolean = true;
-  private baseUrl: string = 'http://127.0.0.1:8000/api/v1';
+  private baseUrl: string = `${API_ORIGIN}/api/v1`;
 
   async getDashboardData(): Promise<DashboardData> {
     if (this.useRealApi) {
@@ -142,7 +144,7 @@ class ApiService {
   async checkHealth(): Promise<boolean> {
     if (!this.useRealApi) return false;
     try {
-      const res = await fetch(`http://127.0.0.1:8000/healthz`);
+      const res = await fetch(`${API_ORIGIN}/healthz`);
       return res.ok;
     } catch {
       return false;
