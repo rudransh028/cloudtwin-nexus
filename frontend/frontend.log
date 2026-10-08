@@ -1,0 +1,10 @@
+
+> cloudtwin-nexus@1.0.0 dev
+> vite --host 0.0.0.0
+
+4:21:40 AM [vite] (client) Re-optimizing dependencies because lockfile has changed
+
+  VITE v6.4.4  ready in 776 ms
+
+  ➜  Local:   http://localhost:3000/
+  ➜  Network: http://172.20.10.2:3000/

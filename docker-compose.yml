@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: cloudtwin
+      POSTGRES_PASSWORD: cloudpassword
+      POSTGRES_DB: cloudtwindb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  prometheus:
+    image: prom/prometheus:v2.47.2
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://cloudtwin:cloudpassword@db:5432/cloudtwindb
+      - KUBERNETES_IN_CLUSTER=False
+      - PROMETHEUS_URL=http://prometheus:9090
+      - CLOUD_MODE=mock
+      - TELEMETRY_MODE=mock
+      - KUBERNETES_MODE=real
+    depends_on:
+      - db
+      - prometheus
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/v1
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
