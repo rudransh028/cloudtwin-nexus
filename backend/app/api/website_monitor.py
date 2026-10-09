@@ -105,8 +105,11 @@ async def _ai_analysis(measurement: dict, fallback: dict) -> dict:
             if not isinstance(parsed.get("findings"), list) or not isinstance(parsed.get("summary"), str):
                 raise ValueError("Unexpected AI response schema")
             return {"provider": provider, "summary": parsed["summary"], "findings": parsed["findings"]}
-    except Exception:
-        fallback["note"] = "The AI model could not be reached, so the explainable baseline diagnosis is shown instead. Check the backend AI key and provider status."
+    except httpx.HTTPStatusError as exc:
+        fallback["note"] = f"The AI provider returned HTTP {exc.response.status_code}. Check the API key permissions and configured model."
+        return fallback
+    except Exception as exc:
+        fallback["note"] = f"The AI request failed ({type(exc).__name__}). Check the backend key, model, and provider configuration."
         return fallback
 
 
