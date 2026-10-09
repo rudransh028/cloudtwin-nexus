@@ -48,6 +48,30 @@ export function mapCostRecommendationToInfraChange(opt: CostOptimization): strin
   return opt.action || 'Right-size underutilized capacity';
 }
 
+
+export type RenderServiceRecord = {
+  id: string;
+  name: string;
+  type: string;
+  region?: string | null;
+  url?: string | null;
+  repo?: string | null;
+  branch?: string | null;
+  status: string;
+  suspended?: boolean | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
+export type RenderServicesPayload = {
+  connected: boolean;
+  source: string;
+  fetchedAt: string;
+  count: number;
+  services: RenderServiceRecord[];
+  message?: string | null;
+};
+
 class ApiService {
   private baseUrl: string = `${API_ORIGIN}/api/v1`;
 
@@ -77,6 +101,10 @@ class ApiService {
       console.warn(`API fallback to mock data for ${path}`, e);
       return fallback;
     }
+  }
+
+  async getRenderServices(): Promise<RenderServicesPayload> {
+    return this.request<RenderServicesPayload>('/render/services');
   }
 
   async getDashboardData(): Promise<DashboardData> {

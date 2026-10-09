@@ -24,6 +24,7 @@ import { AlertsList } from '@/components/dashboard/AlertsList';
 import { MetricCard } from '@/components/common/MetricCard';
 import { AreaChart } from '@/components/charts/AreaChart';
 import { LineChart } from '@/components/charts/LineChart';
+import RenderServicesCard from '@/components/dashboard/RenderServicesCard';
 
 export default function DashboardPage() {
   return (
@@ -31,7 +32,13 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-100">Cloud Overview</h1>
-        <p className="text-sm text-slate-400">Real-time architecture telemetry & digital twin status</p>
+        <p className="text-sm text-slate-400">Live Render service inventory alongside digital-twin analytics</p>
+      </div>
+
+      <RenderServicesCard />
+
+      <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs text-amber-200/90">
+        The Render service inventory above is live API data. The CPU, memory, traffic, latency, cost, SLA, security, charts, and prediction cards below still use demo/simulated project data unless separately connected to a telemetry source.
       </div>
 
       {/* Row 1 - Health Score & Primary Metrics */}

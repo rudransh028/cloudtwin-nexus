@@ -7,6 +7,7 @@ from app.api.architecture import router as architecture_router
 from app.api.simulation import router as simulation_router
 from app.api.intelligence import router as intelligence_router
 from app.api.website_monitor import router as website_monitor_router
+from app.api.render_integration import router as render_integration_router
 from app.websocket.telemetry_ws import router as ws_router
 
 # Initialize database tables
@@ -33,6 +34,7 @@ app.include_router(architecture_router, prefix=settings.API_PREFIX)
 app.include_router(simulation_router, prefix=settings.API_PREFIX)
 app.include_router(intelligence_router, prefix=settings.API_PREFIX)
 app.include_router(website_monitor_router, prefix=settings.API_PREFIX)
+app.include_router(render_integration_router, prefix=settings.API_PREFIX)
 app.include_router(ws_router)
 
 @app.get("/")

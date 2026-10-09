@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     KUBERNETES_MODE: str = "mock"
 
     # Integrations
+    RENDER_API_KEY: Optional[str] = None
     PROMETHEUS_URL: Optional[str] = "http://localhost:9090"
     KUBERNETES_IN_CLUSTER: bool = False
     
