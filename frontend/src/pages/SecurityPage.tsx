@@ -1,10 +1,16 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Shield, ShieldAlert } from 'lucide-react';
 import { mockFindings } from '@/data/mockData';
 import { cn } from '@/lib/utils';
+import { apiService } from '@/services/apiService';
+import { AnalysisFinding } from '@/lib/types';
 
 export default function SecurityPage() {
-  const securityFindings = mockFindings.filter(f => f.category === 'security');
+  const [findings, setFindings] = useState<AnalysisFinding[]>(mockFindings);
+  useEffect(() => {
+    apiService.getFindings().then(setFindings).catch(() => setFindings(mockFindings));
+  }, []);
+  const securityFindings = findings.filter(f => f.category === 'security');
 
   return (
     <div className="p-6 space-y-6">
@@ -41,8 +47,8 @@ export default function SecurityPage() {
               <div key={finding.id} className="bg-slate-900/50 p-4 rounded-lg border border-slate-800 flex gap-4">
                 <div className={cn(
                   "w-2 rounded-full",
-                  finding.severity === 'high' ? 'bg-red-500' :
-                  finding.severity === 'medium' ? 'bg-amber-500' : 'bg-blue-500'
+                  finding.severity.toString().toLowerCase() === 'high' || finding.severity.toString().toLowerCase() === 'critical' ? 'bg-red-500' :
+                  finding.severity.toString().toLowerCase() === 'medium' ? 'bg-amber-500' : 'bg-blue-500'
                 )} />
                 <div>
                   <h4 className="text-sm font-medium text-slate-200">{finding.title}</h4>

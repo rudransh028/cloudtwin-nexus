@@ -15,14 +15,29 @@ export default function ArchitecturePage() {
   const [view, setView] = useState<'logical' | 'kubernetes' | 'network'>('logical');
 
   const nodes = useMemo(() => {
-    return mockTopologyNodes.map(node => ({
-      ...node,
-      type: 'custom',
-    }));
-  }, []);
+    return mockTopologyNodes
+      .filter(node => {
+        const type = (node.data?.type || node.type || '') as string;
+        if (view === 'kubernetes') {
+          return ['service', 'pod', 'node', 'database', 'cache', 'container'].includes(type);
+        }
+        if (view === 'network') {
+          return ['user', 'load_balancer', 'gateway', 'network', 'storage'].includes(type);
+        }
+        return true;
+      })
+      .map(node => ({
+        ...node,
+        type: 'custom',
+      }));
+  }, [view]);
+
+  const visibleIds = useMemo(() => new Set(nodes.map(n => n.id)), [nodes]);
 
   const edges = useMemo(() => {
-    return mockTopologyEdges.map(edge => {
+    return mockTopologyEdges
+      .filter(edge => visibleIds.has(edge.source) && visibleIds.has(edge.target))
+      .map(edge => {
       const edgeLatency = edge.latency ?? edge.latencyMs;
       return {
         ...edge,
@@ -33,7 +48,7 @@ export default function ArchitecturePage() {
         labelBgStyle: { fill: '#1e293b' },
       };
     });
-  }, []);
+  }, [visibleIds]);
 
   const onNodeClick = (_: React.MouseEvent, node: any) => {
     const comp = mockComponents.find(c => c.id === node.id);

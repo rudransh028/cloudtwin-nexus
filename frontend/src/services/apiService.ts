@@ -7,12 +7,12 @@ import {
   Architecture,
   KubernetesNode,
   KubernetesPod,
-  GeoRegion,
   CostBreakdown,
   CostOptimization,
   NetworkPath,
   SimulationResult,
-  SimulationScenario
+  SimulationScenario,
+  TwinStatus
 } from '@/lib/types';
 import {
   mockDashboard,
@@ -23,127 +23,132 @@ import {
   mockArchitectures,
   mockKubernetesNodes,
   mockKubernetesPods,
-  mockGeoRegions,
   mockCostBreakdown,
   mockCostOptimizations,
-  mockNetworkPaths,
-  mockSimulationResults
+  mockNetworkPaths
 } from '@/data/mockData';
 
-const API_ORIGIN = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 console.log('[CloudTwin Nexus] API_ORIGIN resolved to:', API_ORIGIN);
 
+export function mapCostRecommendationToInfraChange(opt: CostOptimization): string {
+  const hay = `${opt.title} ${opt.action ?? ''} ${opt.description ?? ''} ${opt.reason ?? ''}`.toLowerCase();
+  if (hay.includes('cache')) return 'Add Cache';
+  if (hay.includes('spot')) return 'Spot Instances';
+  if (hay.includes('lifecycle') || hay.includes('glacier') || (hay.includes('s3') && hay.includes('polic'))) {
+    return 'S3 Lifecycle';
+  }
+  if (hay.includes('consolidat') || (hay.includes('node') && hay.includes('underutil'))) {
+    return 'Consolidate Nodes';
+  }
+  if (hay.includes('downsize') || (hay.includes('replica') && (hay.includes('postgres') || hay.includes('database')))) {
+    return 'Downsize DB Replica';
+  }
+  if (hay.includes('api') && hay.includes('replica')) return 'Add API Replica';
+  return opt.action || 'Right-size underutilized capacity';
+}
+
 class ApiService {
-  private useRealApi: boolean = true;
   private baseUrl: string = `${API_ORIGIN}/api/v1`;
 
-  async getDashboardData(): Promise<DashboardData> {
-    if (this.useRealApi) {
+  get origin(): string {
+    return API_ORIGIN;
+  }
+
+  private async request<T>(path: string, init?: RequestInit): Promise<T> {
+    const res = await fetch(`${this.baseUrl}${path}`, init);
+    if (!res.ok) {
+      let detail = '';
       try {
-        const res = await fetch(`${this.baseUrl}/dashboard`);
-        if (res.ok) return await res.json();
-      } catch (e) {
-        console.warn('API fallback to mock data for dashboard', e);
+        const body = await res.json();
+        detail = body?.detail ? `: ${typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail)}` : '';
+      } catch {
+        detail = '';
       }
+      throw new Error(`Request failed (${res.status})${detail}`);
     }
-    return Promise.resolve(mockDashboard);
+    return res.json();
+  }
+
+  private async requestWithFallback<T>(path: string, fallback: T): Promise<T> {
+    try {
+      return await this.request<T>(path);
+    } catch (e) {
+      console.warn(`API fallback to mock data for ${path}`, e);
+      return fallback;
+    }
+  }
+
+  async getDashboardData(): Promise<DashboardData> {
+    return this.requestWithFallback('/dashboard', mockDashboard);
   }
 
   async getComponents(): Promise<Component[]> {
-    if (this.useRealApi) {
-      const res = await fetch(`${this.baseUrl}/components`);
-      return res.json();
-    }
-    return Promise.resolve(mockComponents);
+    return this.requestWithFallback('/components', mockComponents);
   }
 
   async getDependencies(): Promise<Dependency[]> {
-    if (this.useRealApi) {
-      const res = await fetch(`${this.baseUrl}/dependencies`);
-      return res.json();
-    }
-    return Promise.resolve(mockDependencies);
+    return this.requestWithFallback('/dependencies', mockDependencies);
   }
 
   async getFindings(): Promise<AnalysisFinding[]> {
-    if (this.useRealApi) {
-      const res = await fetch(`${this.baseUrl}/findings`);
-      return res.json();
-    }
-    return Promise.resolve(mockFindings);
+    return this.requestWithFallback('/findings', mockFindings);
   }
 
   async getPredictions(): Promise<FailurePrediction[]> {
-    if (this.useRealApi) {
-      const res = await fetch(`${this.baseUrl}/predictions`);
-      return res.json();
-    }
-    return Promise.resolve(mockPredictions);
+    return this.requestWithFallback('/predictions', mockPredictions);
   }
 
   async getArchitectures(): Promise<Architecture[]> {
-    if (this.useRealApi) {
-      const res = await fetch(`${this.baseUrl}/architectures`);
-      return res.json();
-    }
-    return Promise.resolve(mockArchitectures);
+    return this.requestWithFallback('/architectures', mockArchitectures);
+  }
+
+  async optimizeArchitecture(req: {
+    expectedUsers: number;
+    maxLatencyMs: number;
+    minSla: number;
+    monthlyBudget: number;
+  }): Promise<Architecture[]> {
+    return this.request<Architecture[]>('/optimize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req)
+    });
   }
 
   async getKubernetesNodes(): Promise<KubernetesNode[]> {
-    if (this.useRealApi) {
-      const res = await fetch(`${this.baseUrl}/kubernetes/nodes`);
-      return res.json();
-    }
-    return Promise.resolve(mockKubernetesNodes);
+    return this.requestWithFallback('/kubernetes/nodes', mockKubernetesNodes);
   }
 
   async getKubernetesPods(): Promise<KubernetesPod[]> {
-    if (this.useRealApi) {
-      const res = await fetch(`${this.baseUrl}/kubernetes/pods`);
-      return res.json();
-    }
-    return Promise.resolve(mockKubernetesPods);
+    return this.requestWithFallback('/kubernetes/pods', mockKubernetesPods);
   }
 
   async getNetworkPaths(): Promise<NetworkPath[]> {
-    if (this.useRealApi) {
-      const res = await fetch(`${this.baseUrl}/network/paths`);
-      return res.json();
-    }
-    return Promise.resolve(mockNetworkPaths);
+    return this.requestWithFallback('/network/paths', mockNetworkPaths);
   }
 
   async getCostBreakdown(): Promise<CostBreakdown[]> {
-    if (this.useRealApi) {
-      const res = await fetch(`${this.baseUrl}/cost/breakdown`);
-      return res.json();
-    }
-    return Promise.resolve(mockCostBreakdown);
+    return this.requestWithFallback('/cost/breakdown', mockCostBreakdown);
   }
 
   async getCostOptimizations(): Promise<CostOptimization[]> {
-    if (this.useRealApi) {
-      const res = await fetch(`${this.baseUrl}/cost/optimizations`);
-      return res.json();
-    }
-    return Promise.resolve(mockCostOptimizations);
+    return this.requestWithFallback('/cost/optimizations', mockCostOptimizations);
+  }
+
+  async getTwinStatus(): Promise<TwinStatus> {
+    return this.request<TwinStatus>('/twin/status');
   }
 
   async runSimulation(scenario: SimulationScenario): Promise<SimulationResult> {
-    if (this.useRealApi) {
-      const res = await fetch(`${this.baseUrl}/simulations`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(scenario)
-      });
-      if (!res.ok) throw new Error("Backend unavailable");
-      return res.json();
-    }
-    return Promise.resolve(mockSimulationResults[0]);
+    return this.request<SimulationResult>('/simulations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(scenario)
+    });
   }
 
   async checkHealth(): Promise<boolean> {
-    if (!this.useRealApi) return false;
     try {
       const res = await fetch(`${API_ORIGIN}/healthz`);
       return res.ok;

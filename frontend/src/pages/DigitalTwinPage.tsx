@@ -15,18 +15,38 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { mockComponents, mockDashboard } from '@/data/mockData';
+import { apiService } from '@/services/apiService';
+import { Component, TwinStatus } from '@/lib/types';
 
 export default function DigitalTwinPage() {
   const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [twinState, setTwinState] = useState<'synchronized' | 'forked'>('synchronized');
+  const [components, setComponents] = useState<Component[]>(mockComponents);
   const [selectedComp, setSelectedComp] = useState<string>(mockComponents[0].id);
+  const [twinStatus, setTwinStatus] = useState<TwinStatus | null>(null);
 
-  const handleSync = () => {
+  const handleSync = async () => {
     setSyncing(true);
-    setTimeout(() => setSyncing(false), 1200);
+    setSyncError(null);
+    try {
+      const [status, comps] = await Promise.all([
+        apiService.getTwinStatus(),
+        apiService.getComponents(),
+      ]);
+      setTwinStatus(status);
+      if (comps.length) setComponents(comps);
+    } catch (e) {
+      setSyncError(e instanceof Error ? e.message : 'Twin sync failed');
+    } finally {
+      setSyncing(false);
+    }
   };
 
-  const activeComp = mockComponents.find(c => c.id === selectedComp) || mockComponents[0];
+  const activeComp = components.find(c => c.id === selectedComp) || components[0];
+  const dataMode = twinStatus
+    ? `${twinStatus.cloudMode || 'mock'}/${twinStatus.kubernetesMode || 'mock'}/${twinStatus.telemetryMode || 'mock'}`
+    : 'not synced';
 
   return (
     <div className="space-y-6">
@@ -61,10 +81,19 @@ export default function DigitalTwinPage() {
             className="text-xs bg-cyan-600 hover:bg-cyan-500 text-white font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-lg shadow-cyan-950/50"
           >
             <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
-            {syncing ? 'Syncing Telemetry...' : 'Sync with Real Cloud'}
+            {syncing ? 'Syncing Telemetry...' : 'Sync Twin Status'}
           </button>
         </div>
       </div>
+      {syncError && <p className="text-xs text-rose-400">{syncError}</p>}
+      {twinStatus && (
+        <p className="text-xs text-slate-400">
+          Last sync: {twinStatus.lastSyncedAt || 'just now'} · provider modes {dataMode}
+          {(twinStatus.cloudMode === 'mock' && twinStatus.kubernetesMode === 'mock')
+            ? ' — mock/simulated providers, not live AWS/Kubernetes inventory.'
+            : ''}
+        </p>
+      )}
 
       {/* Real vs Twin Dual-Plane Status */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -126,7 +155,7 @@ export default function DigitalTwinPage() {
           <div className="grid grid-cols-3 gap-3 text-center mb-4">
             <div className="bg-slate-900/70 p-3 rounded-lg border border-slate-800">
               <div className="text-[10px] text-slate-400 uppercase font-semibold">Graph Nodes</div>
-              <div className="text-lg font-mono font-bold text-slate-100">{mockComponents.length}</div>
+              <div className="text-lg font-mono font-bold text-slate-100">{components.length}</div>
             </div>
             <div className="bg-slate-900/70 p-3 rounded-lg border border-slate-800">
               <div className="text-[10px] text-slate-400 uppercase font-semibold">Edges / Deps</div>
@@ -150,12 +179,12 @@ export default function DigitalTwinPage() {
         {/* Component Selector */}
         <div className="bg-slate-800/60 rounded-xl p-5 border border-slate-700/60 shadow-lg">
           <h3 className="text-sm font-semibold text-slate-200 mb-3 flex items-center justify-between">
-            <span>Mirrored Components ({mockComponents.length})</span>
+            <span>Mirrored Components ({components.length})</span>
             <span className="text-xs text-slate-500 font-normal">Click to inspect</span>
           </h3>
 
           <div className="space-y-2 max-h-[460px] overflow-y-auto pr-1">
-            {mockComponents.map(comp => {
+            {components.map(comp => {
               const isSelected = comp.id === selectedComp;
               const isWarning = comp.status === 'warning' || comp.status === 'critical';
 

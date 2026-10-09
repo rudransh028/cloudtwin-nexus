@@ -251,6 +251,7 @@ export interface Architecture {
   cloudProvider?: string;
   isCurrent?: boolean;
   meetsConstraints?: boolean;
+  verdict?: 'PASS' | 'FAIL' | 'OVER_BUDGET';
 }
 
 export interface OptimizationConstraints {
@@ -369,4 +370,18 @@ export interface CostOptimization {
   reason?: string;
   action?: string;
   effort?: 'low' | 'medium' | 'high';
+}
+
+export interface TwinStatus {
+  status: string;
+  cluster?: string;
+  region?: string;
+  trackedComponents?: number;
+  graphEdges?: number;
+  driftPercent?: number;
+  lastSyncedAt?: string;
+  cadenceSeconds?: number;
+  cloudMode?: string;
+  kubernetesMode?: string;
+  telemetryMode?: string;
 }

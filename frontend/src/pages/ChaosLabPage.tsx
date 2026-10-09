@@ -10,7 +10,7 @@ import {
   Server,
   ArrowRight
 } from 'lucide-react';
-import { mockComponents } from '@/data/mockData';
+import { apiService } from '@/services/apiService';
 
 export default function ChaosLabPage() {
   const [selectedExperiment, setSelectedExperiment] = useState<string>('kill-db');
@@ -72,8 +72,24 @@ export default function ChaosLabPage() {
     }
   ];
 
-  const handleRunExperiment = () => {
+  const SIM_NOTE = 'Digital Twin only — no destructive live-cluster actions were executed.';
+
+  const chaosPayload = (id: string) => {
+    switch (id) {
+      case 'kill-pod':
+        return { injectedFailures: ['Kill API'], infraChanges: [] as string[] };
+      case 'kill-node':
+        return { injectedFailures: ['Kill Node'], infraChanges: [] as string[] };
+      case 'network-latency':
+        return { injectedFailures: ['Network Failure'], infraChanges: [] as string[] };
+      default:
+        return { injectedFailures: ['Kill Database'], infraChanges: [] as string[] };
+    }
+  };
+
+  const handleRunExperiment = async () => {
     const exp = experiments.find(e => e.id === selectedExperiment) || experiments[0];
+    const payload = chaosPayload(exp.id);
     setRunning(true);
     setExecutionResult({
       stage: 'injected',
@@ -81,38 +97,45 @@ export default function ChaosLabPage() {
       slaDrop: exp.defaultSla,
       recoveryTime: 'Calculating...',
       log: [
-        `[00:00] [SAFE_SIM] Cloned Digital Twin snapshot to sandbox namespace.`,
-        `[00:01] [FAULT_INJECT] Executed scenario: "${exp.title}".`,
-        `[00:02] [SYSTEM_REACTION] Connection timeouts detected. Health check probes failing.`,
-        `[00:03] [CASCADE] Downstream services entered degraded circuit-breaker state.`,
+        `[00:00] [SAFE_SIM] Cloned Digital Twin snapshot. Production AWS/Kubernetes is untouched.`,
+        `[00:01] [FAULT_INJECT] Queued scenario: "${exp.title}".`,
       ]
     });
 
-    setTimeout(() => {
-      setExecutionResult(prev => ({
-        ...prev,
-        stage: 'cascading',
+    try {
+      const result = await apiService.runSimulation({
+        name: `Chaos Lab: ${exp.title}`,
+        trafficMultiplier: 1,
+        injectedFailures: payload.injectedFailures,
+        infraChanges: payload.infraChanges,
+      });
+      const slaDrop = Number(((result.slaBefore ?? 99.87) - (result.slaAfter ?? 99.87)).toFixed(2));
+      const degraded = (result.components || []).filter(c => c.statusAfter !== 'healthy').length;
+      setExecutionResult({
+        stage: 'recovered',
+        affectedCount: degraded || exp.defaultAffected,
+        slaDrop: Number.isFinite(slaDrop) ? slaDrop : exp.defaultSla,
+        recoveryTime: 'simulation complete',
         log: [
-          ...prev.log,
-          `[00:05] [OBSERVABILITY] Availability SLA dropped by ${exp.defaultSla}%.`,
-          `[00:07] [FAILOVER_TEST] Triggering container self-healing & pod reschedule.`,
+          `[00:00] [SAFE_SIM] Cloned Digital Twin snapshot. Production AWS/Kubernetes is untouched.`,
+          `[00:01] [FAULT_INJECT] Executed scenario: "${exp.title}".`,
+          `[00:02] [ENGINE] Simulation id ${result.id} completed with health ${result.overallHealthAfter}.`,
+          `[00:03] [OBSERVABILITY] SLA ${result.slaBefore}% → ${result.slaAfter}%. Bottleneck: ${result.bottleneck}.`,
+          `[00:04] [CASCADE] ${degraded} modeled components left healthy state.`,
+          `[00:05] [REPORT] ${SIM_NOTE}`,
         ]
-      }));
-    }, 1500);
-
-    setTimeout(() => {
-      setRunning(false);
+      });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Chaos simulation failed';
       setExecutionResult(prev => ({
         ...prev,
         stage: 'recovered',
-        recoveryTime: '42 seconds',
-        log: [
-          ...prev.log,
-          `[00:12] [RECOVERY] System stabilized. 100% of affected endpoints restored.`,
-          `[00:15] [REPORT_GENERATED] Resilience score logged to Twin intelligence audit.`,
-        ]
+        recoveryTime: 'failed',
+        log: [...prev.log, `[ERROR] ${message}`]
       }));
-    }, 3200);
+    } finally {
+      setRunning(false);
+    }
   };
 
   return (

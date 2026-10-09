@@ -1,8 +1,20 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Container, Server, AlertTriangle, Cpu, HardDrive } from 'lucide-react';
 import { mockKubernetesNodes, mockKubernetesPods } from '@/data/mockData';
+import { apiService } from '@/services/apiService';
+import { KubernetesNode, KubernetesPod } from '@/lib/types';
 
 export default function KubernetesPage() {
+  const [nodes, setNodes] = useState<KubernetesNode[]>(mockKubernetesNodes);
+  const [pods, setPods] = useState<KubernetesPod[]>(mockKubernetesPods);
+
+  useEffect(() => {
+    Promise.all([apiService.getKubernetesNodes(), apiService.getKubernetesPods()]).then(([n, p]) => {
+      setNodes(n);
+      setPods(p);
+    }).catch(() => undefined);
+  }, []);
+
   return (
     <div className="space-y-6">
       <div>
@@ -29,10 +41,10 @@ export default function KubernetesPage() {
       {/* Nodes Section */}
       <div>
         <h2 className="text-base font-semibold text-slate-200 mb-3 flex items-center gap-2">
-          <Server size={18} className="text-cyan-400" /> Worker Nodes ({mockKubernetesNodes.length})
+          <Server size={18} className="text-cyan-400" /> Worker Nodes ({nodes.length})
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {mockKubernetesNodes.map(node => {
+          {nodes.map(node => {
             const cpu = node.cpuUsage ?? node.cpu ?? 50;
             const mem = node.memoryUsage ?? node.memory ?? 50;
             const isReady = node.status === 'Ready' || node.status === 'healthy';
@@ -80,7 +92,7 @@ export default function KubernetesPage() {
 
       {/* Pods Table */}
       <div className="bg-slate-800/60 rounded-xl p-6 border border-slate-700/60 shadow-lg">
-        <h2 className="text-base font-semibold text-slate-200 mb-4">Pod Fleet Inventory ({mockKubernetesPods.length})</h2>
+        <h2 className="text-base font-semibold text-slate-200 mb-4">Pod Fleet Inventory ({pods.length})</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs text-slate-300">
             <thead className="text-[10px] uppercase font-bold text-slate-400 bg-slate-900/60 border-b border-slate-700">
@@ -95,7 +107,7 @@ export default function KubernetesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/40">
-              {mockKubernetesPods.map(pod => {
+              {pods.map(pod => {
                 const nodeName = pod.nodeName || pod.node || 'unassigned';
                 const cpu = pod.cpuUsage ?? pod.cpu ?? 0;
                 const mem = pod.memoryUsage ?? pod.memory ?? 0;

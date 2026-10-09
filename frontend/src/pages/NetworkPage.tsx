@@ -1,8 +1,14 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Globe, ArrowRight, Activity, AlertCircle } from 'lucide-react';
 import { mockNetworkPaths } from '@/data/mockData';
+import { apiService } from '@/services/apiService';
+import { NetworkPath } from '@/lib/types';
 
 export default function NetworkPage() {
+  const [paths, setPaths] = useState<NetworkPath[]>(mockNetworkPaths);
+  useEffect(() => {
+    apiService.getNetworkPaths().then(setPaths).catch(() => undefined);
+  }, []);
   return (
     <div className="space-y-6">
       <div>
@@ -20,7 +26,7 @@ export default function NetworkPage() {
           <Activity size={18} className="text-cyan-400" /> Critical Traffic Transit Paths
         </h2>
         <div className="space-y-4">
-          {mockNetworkPaths.map(path => {
+          {paths.map(path => {
             const lat = path.totalLatency ?? path.latency ?? path.totalLatencyMs ?? 50;
             const isHighLatency = lat > 100;
             const hopList = Array.isArray(path.hops)

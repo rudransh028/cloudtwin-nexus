@@ -1,7 +1,36 @@
-import React from 'react';
-import { Cloud, Check, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Cloud, Check, Download } from 'lucide-react';
 
 export default function MultiCloudPage() {
+  const [generated, setGenerated] = useState(false);
+
+  const handleMigrationPlan = () => {
+    const plan = {
+      title: 'Multi-cloud migration feasibility plan',
+      generatedAt: new Date().toISOString(),
+      note: 'Comparative estimate only. No cloud accounts were modified.',
+      currentProvider: 'AWS',
+      comparison: [
+        { metric: 'Monthly Cost', aws: '$12,450', gcp: '$10,800', azure: '$13,200' },
+        { metric: 'Avg Global Latency', aws: '45ms', gcp: '48ms', azure: '42ms' },
+        { metric: 'Managed DB SLA', aws: '99.95%', gcp: '99.99%', azure: '99.99%' }
+      ],
+      recommendedNextSteps: [
+        'Map EKS workloads to GKE/AKS node pools with equivalent CPU class.',
+        'Estimate data-transfer egress from ap-south-1 before any cutover.',
+        'Keep RDS as the system of record until a replica is proven in the target cloud.'
+      ]
+    };
+    const blob = new Blob([JSON.stringify(plan, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'multi-cloud-migration-plan.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    setGenerated(true);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -51,10 +80,16 @@ export default function MultiCloudPage() {
         </table>
       </div>
       
-      <div className="flex justify-center mt-6">
-        <button className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-6 py-2 rounded-lg transition-colors shadow-sm">
-          Generate Migration Plan
+      <div className="flex flex-col items-center mt-6">
+        <button
+          onClick={handleMigrationPlan}
+          className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-6 py-2 rounded-lg transition-colors shadow-sm flex items-center gap-2"
+        >
+          <Download size={16} /> Generate Migration Plan
         </button>
+        {generated && (
+          <p className="text-center text-xs text-emerald-400 mt-3">Downloaded comparative plan JSON. No live cloud migration was started.</p>
+        )}
       </div>
     </div>
   );

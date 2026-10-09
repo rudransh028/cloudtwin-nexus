@@ -1,12 +1,40 @@
 import React, { useState } from 'react';
-import { Cpu, CheckCircle2, XCircle, AlertTriangle, ArrowRight, Sliders } from 'lucide-react';
+import { Cpu, CheckCircle2, XCircle, AlertTriangle, ArrowRight, Sliders, Loader2 } from 'lucide-react';
 import { mockArchitectures } from '@/data/mockData';
+import { apiService } from '@/services/apiService';
+import { Architecture } from '@/lib/types';
+
 
 export default function OptimizerPage() {
   const [targetUsers, setTargetUsers] = useState(50000);
   const [maxLatency, setMaxLatency] = useState(100);
   const [minSla, setMinSla] = useState(99.9);
   const [monthlyBudget, setMonthlyBudget] = useState(20000);
+  const [evaluating, setEvaluating] = useState(false);
+  const [evalError, setEvalError] = useState<string | null>(null);
+  const [evaluatedArchitectures, setEvaluatedArchitectures] = useState<Architecture[] | null>(null);
+
+  const handleEvaluate = async () => {
+    setEvaluating(true);
+    setEvalError(null);
+    try {
+      const results = await apiService.optimizeArchitecture({
+        expectedUsers: targetUsers,
+        maxLatencyMs: maxLatency,
+        minSla: minSla,
+        monthlyBudget: monthlyBudget,
+      });
+      setEvaluatedArchitectures(results.length > 0 ? results : mockArchitectures);
+    } catch (e) {
+      console.warn('[OptimizerPage] evaluate error, using mock:', e);
+      setEvalError('Backend unavailable — showing cached results.');
+      setEvaluatedArchitectures(mockArchitectures);
+    } finally {
+      setEvaluating(false);
+    }
+  };
+
+  const architectures = evaluatedArchitectures ?? mockArchitectures;
 
   return (
     <div className="space-y-6">
@@ -90,9 +118,17 @@ export default function OptimizerPage() {
             />
           </div>
 
-          <button className="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-medium py-2.5 rounded-lg text-xs transition-colors shadow-lg shadow-cyan-950/50 flex items-center justify-center gap-2">
-            Re-Evaluate Topologies <ArrowRight size={14} />
+          <button
+            onClick={handleEvaluate}
+            disabled={evaluating}
+            className="w-full bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 rounded-lg text-xs transition-colors shadow-lg shadow-cyan-950/50 flex items-center justify-center gap-2"
+          >
+            {evaluating ? <Loader2 size={14} className="animate-spin" /> : <ArrowRight size={14} />}
+            {evaluating ? 'Evaluating...' : 'Re-Evaluate Topologies'}
           </button>
+          {evalError && (
+            <p className="text-xs text-amber-400 text-center mt-2">{evalError}</p>
+          )}
         </div>
 
         {/* Candidate Architectures */}
@@ -100,16 +136,18 @@ export default function OptimizerPage() {
           <h2 className="text-base font-semibold text-slate-100">Evaluated Candidate Architectures</h2>
           
           <div className="space-y-4">
-            {mockArchitectures.map(arch => {
+            {architectures.map(arch => {
               const cost = arch.cost ?? arch.costMonthly ?? 15000;
               const latency = arch.latency ?? arch.avgLatencyMs ?? 95;
               const sla = arch.sla ?? arch.estimatedSla ?? 99.8;
               
-              let verdict: 'PASS' | 'OVER_BUDGET' | 'FAIL' = 'PASS';
-              if (cost > monthlyBudget) {
-                verdict = 'OVER_BUDGET';
-              } else if (latency > maxLatency || sla < minSla) {
-                verdict = 'FAIL';
+              let verdict: 'PASS' | 'OVER_BUDGET' | 'FAIL' = arch.verdict ?? 'PASS';
+              if (!arch.verdict) {
+                if (cost > monthlyBudget) {
+                  verdict = 'OVER_BUDGET';
+                } else if (latency > maxLatency || sla < minSla) {
+                  verdict = 'FAIL';
+                }
               }
 
               const isRecommended = verdict === 'PASS';
