@@ -16,6 +16,7 @@ import OptimizerPage from '@/pages/OptimizerPage';
 import ChaosLabPage from '@/pages/ChaosLabPage';
 import ReportsPage from '@/pages/ReportsPage';
 import SettingsPage from '@/pages/SettingsPage';
+import WebsiteMonitorPage from '@/pages/WebsiteMonitorPage';
 
 export default function AppRoutes() {
   return (
@@ -28,6 +29,7 @@ export default function AppRoutes() {
         <Route path="/simulation" element={<SimulationPage />} />
         <Route path="/predictions" element={<PredictionPage />} />
         <Route path="/performance" element={<PerformancePage />} />
+        <Route path="/website-monitor" element={<WebsiteMonitorPage />} />
         <Route path="/security" element={<SecurityPage />} />
         <Route path="/kubernetes" element={<KubernetesPage />} />
         <Route path="/network" element={<NetworkPage />} />

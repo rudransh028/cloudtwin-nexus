@@ -13,6 +13,7 @@ import {
   Shield,
   Container,
   Globe,
+  Activity,
   Wallet,
   Cloud,
   Cpu,
@@ -46,6 +47,7 @@ const navGroups = [
     title: 'ANALYSIS',
     items: [
       { name: 'Performance', path: '/performance', icon: Gauge },
+      { name: 'Website Monitor', path: '/website-monitor', icon: Activity },
       { name: 'Security', path: '/security', icon: Shield },
       { name: 'Kubernetes', path: '/kubernetes', icon: Container },
       { name: 'Network', path: '/network', icon: Globe },
