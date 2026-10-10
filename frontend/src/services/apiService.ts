@@ -28,6 +28,17 @@ import {
   mockNetworkPaths
 } from '@/data/mockData';
 
+
+export interface RealCloudMetricPoint { timestamp: string | null; value: number }
+export interface RealCloudService {
+  id: string; name: string; type?: string; region?: string; status?: string | boolean | null; url?: string; createdAt?: string;
+  cpuPercent: number | null; memoryPercent: number | null; requestCountLastHour: number | null; latestLatencyMs: number | null;
+  cpuHistory: RealCloudMetricPoint[]; memoryHistory: RealCloudMetricPoint[]; metricAvailability: Record<string, boolean>;
+}
+export interface RealCloudPrediction { id: string; title: string; serviceId: string; severity: string; currentPercent: number; forecast15MinPercent: number; slopePercentagePointsPerMinute: number; confidence: string; source: string; description: string; window: string }
+export interface RealCloudSummary { connected: boolean; source: string; observedAt: string; windowStart: string; windowEnd: string; serviceCount: number; cpuAveragePercent: number | null; memoryAveragePercent: number | null; services: RealCloudService[]; predictions: RealCloudPrediction[]; notes: string[] }
+export interface RealCloudCosts { connected: boolean; source: string | null; currency: string | null; periodStart?: string; periodEndExclusive?: string; monthToDate: number | null; services: Array<{service: string; amount: number; currency: string}>; nextMonthForecast: null | {amount: number; currency: string; periodStart: string; periodEnd: string; source: string}; forecastMessage?: string | null; message?: string; dataFreshness?: string }
+
 const API_ORIGIN = (import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
 console.log('[CloudTwin Nexus] API_ORIGIN resolved to:', API_ORIGIN);
 
@@ -47,30 +58,6 @@ export function mapCostRecommendationToInfraChange(opt: CostOptimization): strin
   if (hay.includes('api') && hay.includes('replica')) return 'Add API Replica';
   return opt.action || 'Right-size underutilized capacity';
 }
-
-
-export type RenderServiceRecord = {
-  id: string;
-  name: string;
-  type: string;
-  region?: string | null;
-  url?: string | null;
-  repo?: string | null;
-  branch?: string | null;
-  status: string;
-  suspended?: boolean | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-};
-
-export type RenderServicesPayload = {
-  connected: boolean;
-  source: string;
-  fetchedAt: string;
-  count: number;
-  services: RenderServiceRecord[];
-  message?: string | null;
-};
 
 class ApiService {
   private baseUrl: string = `${API_ORIGIN}/api/v1`;
@@ -103,12 +90,16 @@ class ApiService {
     }
   }
 
-  async getRenderServices(): Promise<RenderServicesPayload> {
-    return this.request<RenderServicesPayload>('/render/services');
-  }
-
   async getDashboardData(): Promise<DashboardData> {
     return this.requestWithFallback('/dashboard', mockDashboard);
+  }
+
+  async getRealCloudSummary(): Promise<RealCloudSummary> {
+    return this.request<RealCloudSummary>('/real-cloud/summary');
+  }
+
+  async getRealCloudCosts(): Promise<RealCloudCosts> {
+    return this.request<RealCloudCosts>('/real-cloud/costs');
   }
 
   async getComponents(): Promise<Component[]> {

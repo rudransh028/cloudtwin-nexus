@@ -1,204 +1,34 @@
-import React from 'react';
-import { 
-  Activity, 
-  MemoryStick, 
-  ArrowUpDown, 
-  Timer, 
-  AlertCircle, 
-  CheckCircle, 
-  Wallet, 
-  Shield 
-} from 'lucide-react';
-import { 
-  mockDashboard, 
-  mockCpuHistory, 
-  mockMemoryHistory, 
-  mockRequestRateHistory, 
-  mockLatencyHistory, 
-  mockErrorRateHistory, 
-  mockPredictions 
-} from '@/data/mockData';
-import { HealthScore } from '@/components/dashboard/HealthScore';
-import { InfrastructureSummary } from '@/components/dashboard/InfrastructureSummary';
-import { AlertsList } from '@/components/dashboard/AlertsList';
-import { MetricCard } from '@/components/common/MetricCard';
-import { AreaChart } from '@/components/charts/AreaChart';
-import { LineChart } from '@/components/charts/LineChart';
-import RenderServicesCard from '@/components/dashboard/RenderServicesCard';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Activity, MemoryStick, RefreshCw, Server, AlertTriangle, CheckCircle2, CircleAlert, ExternalLink } from 'lucide-react';
+import { apiService, RealCloudSummary } from '@/services/apiService';
+
+function Metric({ title, value, detail, icon: Icon }: { title: string; value: string; detail: string; icon: React.ElementType }) {
+  return <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-5"><div className="flex items-center justify-between"><span className="text-sm text-slate-400">{title}</span><Icon size={18} className="text-cyan-400" /></div><div className="mt-3 text-3xl font-bold text-slate-100">{value}</div><p className="mt-2 text-xs text-slate-500">{detail}</p></div>;
+}
 
 export default function DashboardPage() {
-  return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-100">Cloud Overview</h1>
-        <p className="text-sm text-slate-400">Live Render service inventory alongside digital-twin analytics</p>
-      </div>
+  const [data, setData] = useState<RealCloudSummary | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try { const result = await apiService.getRealCloudSummary(); setData(result); setError(null); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Could not retrieve live provider metrics'); setData(null); }
+    finally { setLoading(false); }
+  }, []);
+  useEffect(() => { void load(); }, [load]);
+  const fmt = (v: number | null | undefined, suffix = '%') => v == null ? 'Unavailable' : `${v.toFixed(1)}${suffix}`;
+  const timestamp = data?.observedAt ? new Date(data.observedAt).toLocaleString() : '—';
 
-      <RenderServicesCard />
-
-      <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs text-amber-200/90">
-        The Render service inventory above is live API data. The CPU, memory, traffic, latency, cost, SLA, security, charts, and prediction cards below still use demo/simulated project data unless separately connected to a telemetry source.
-      </div>
-
-      {/* Row 1 - Health Score & Primary Metrics */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <HealthScore />
-        </div>
-        <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <MetricCard
-            title="CPU Usage"
-            value={`${mockDashboard.cpuAvg}%`}
-            subtitle="Cluster aggregate"
-            icon={Activity}
-            trend={{ value: 4.2, isPositive: false }}
-            sparklineData={mockCpuHistory.slice(-15).map(p => p.value)}
-          />
-          <MetricCard
-            title="Memory Usage"
-            value={`${mockDashboard.memoryAvg}%`}
-            subtitle="Working set bytes"
-            icon={MemoryStick}
-            trend={{ value: 1.8, isPositive: false }}
-            sparklineData={mockMemoryHistory.slice(-15).map(p => p.value)}
-          />
-          <MetricCard
-            title="Request Rate"
-            value={`${(mockDashboard.requestRate / 1000).toFixed(1)}k/min`}
-            subtitle="Total HTTP inbound"
-            icon={ArrowUpDown}
-            trend={{ value: 8.5, isPositive: true }}
-            sparklineData={mockRequestRateHistory.slice(-15).map(p => p.value)}
-          />
-          <MetricCard
-            title="Average Latency"
-            value={`${mockDashboard.avgLatency}ms`}
-            subtitle="p95 cross-service"
-            icon={Timer}
-            trend={{ value: 5.1, isPositive: true }}
-            sparklineData={mockLatencyHistory.slice(-15).map(p => p.value)}
-          />
-        </div>
-      </div>
-
-      {/* Row 2 - Secondary Status Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          title="Error Rate"
-          value={`${mockDashboard.errorRate}%`}
-          subtitle="5xx HTTP errors"
-          icon={AlertCircle}
-          status="healthy"
-          sparklineData={mockErrorRateHistory.slice(-15).map(p => p.value)}
-        />
-        <MetricCard
-          title="Availability SLA"
-          value={`${mockDashboard.sla}%`}
-          subtitle="Trailing 30-day window"
-          icon={CheckCircle}
-          status="healthy"
-        />
-        <MetricCard
-          title="Estimated Spend"
-          value={`₹${mockDashboard.estimatedCost.toLocaleString('en-IN')}/mo`}
-          subtitle="AWS compute & data tier"
-          icon={Wallet}
-        />
-        <MetricCard
-          title="Security Score"
-          value={`${mockDashboard.securityScore}/100`}
-          subtitle="2 open critical findings"
-          icon={Shield}
-          status="warning"
-        />
-      </div>
-
-      {/* Row 3 - Request Rate & Latency Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm rounded-xl p-6 shadow-lg">
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-100">Traffic Ingestion Rate</h3>
-            <p className="text-sm text-slate-400">24-hour HTTP request volume (req/min)</p>
-          </div>
-          <AreaChart
-            data={mockRequestRateHistory}
-            color="#06b6d4"
-            height={280}
-            name="Requests/min"
-            gradientId="reqRateGrad"
-          />
-        </div>
-
-        <div className="bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm rounded-xl p-6 shadow-lg">
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-100">Latency Profile</h3>
-            <p className="text-sm text-slate-400">P50 vs P95 vs P99 service round-trip times</p>
-          </div>
-          <LineChart
-            data={mockLatencyHistory.map((item) => ({
-              time: item.time,
-              p50: Math.round(item.value * 0.7),
-              p95: Math.round(item.value),
-              p99: Math.round(item.value * 1.5)
-            }))}
-            lines={[
-              { dataKey: 'p50', color: '#10b981', name: 'P50 (Median)' },
-              { dataKey: 'p95', color: '#06b6d4', name: 'P95 Latency' },
-              { dataKey: 'p99', color: '#f59e0b', name: 'P99 Latency' }
-            ]}
-            height={280}
-          />
-        </div>
-      </div>
-
-      {/* Row 4 - Alerts and Predictions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="h-[400px]">
-          <AlertsList />
-        </div>
-        <div className="bg-slate-800/50 border border-slate-700/50 backdrop-blur-sm rounded-xl p-6 shadow-lg h-[400px] flex flex-col">
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold text-slate-100">Failure Predictions</h3>
-            <p className="text-sm text-slate-400">Trend extrapolation & early degradation alerts</p>
-          </div>
-          <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
-            {mockPredictions.map((pred) => {
-              const sev = (pred.severity || 'HIGH').toString().toUpperCase();
-              return (
-                <div key={pred.id} className="bg-slate-900/50 border border-slate-700 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-medium text-slate-200">
-                      {pred.title || pred.predictedIssue || 'System Degradation'}
-                    </h4>
-                    <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-                      sev === 'HIGH' || sev === 'CRITICAL' ? 'bg-rose-500/10 text-rose-400 border-rose-500/20' :
-                      sev === 'MEDIUM' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                      'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
-                    }`}>
-                      {sev} Risk
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 mb-3">{pred.description || pred.cause || 'Anomalous trend detected'}</p>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">
-                      {pred.confidence}% Confidence
-                    </span>
-                    <span className="text-slate-500">
-                      ETA: {pred.timeToImpact || pred.estimatedTime || pred.eta || '15-20 min'}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Row 5 - Full Width Infrastructure Summary */}
-      <div>
-        <InfrastructureSummary />
-      </div>
-    </div>
-  );
+  return <div className="space-y-6">
+    <div className="flex flex-wrap items-start justify-between gap-3"><div><h1 className="text-2xl font-bold text-slate-100">Cloud Overview</h1><p className="mt-1 text-sm text-slate-400">Provider-backed telemetry, resource inventory, and forecasts from observed data.</p></div><button onClick={() => void load()} disabled={loading} className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-200 disabled:opacity-50"><RefreshCw size={15} className={loading ? 'animate-spin' : ''}/> Refresh live data</button></div>
+    <div className="rounded-xl border border-cyan-700/50 bg-cyan-950/20 p-4 text-sm text-cyan-100"><div className="flex items-center gap-2 font-semibold"><CheckCircle2 size={17}/> Live-data mode</div><p className="mt-1 text-xs text-cyan-200/80">This dashboard does not substitute mock values when a provider metric is missing. Unavailable measurements are shown explicitly.</p>{data && <p className="mt-2 text-xs text-slate-400">Source: {data.source} · Observed at: {timestamp} · {data.serviceCount} services discovered</p>}</div>
+    {loading && <div className="rounded-xl border border-slate-700 bg-slate-800/40 p-8 text-center text-slate-400">Fetching actual metrics from your cloud provider…</div>}
+    {error && !loading && <div className="rounded-xl border border-rose-800 bg-rose-950/30 p-5 text-sm text-rose-200"><div className="flex items-center gap-2 font-semibold"><CircleAlert size={18}/> Live provider connection failed</div><p className="mt-2">{error}</p><p className="mt-2 text-xs text-rose-200/70">Check that RENDER_API_KEY is configured on the deployed FastAPI backend and that the Render metrics endpoints are available for your service plan.</p></div>}
+    {data && !loading && <>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"><Metric title="Average CPU Utilization" value={fmt(data.cpuAveragePercent)} detail="Average across services with real CPU usage and limit data" icon={Activity}/><Metric title="Average Memory Utilization" value={fmt(data.memoryAveragePercent)} detail="Average across services with real memory usage and limit data" icon={MemoryStick}/><Metric title="Discovered Services" value={String(data.serviceCount)} detail="Actual services returned by the Render API" icon={Server}/><Metric title="Live Trend Alerts" value={String(data.predictions.length)} detail="Trend alerts based on recent provider measurements" icon={AlertTriangle}/></div>
+      <section className="overflow-hidden rounded-xl border border-slate-700 bg-slate-800/40"><div className="border-b border-slate-700 p-5"><h2 className="font-semibold text-slate-100">Real service telemetry</h2><p className="mt-1 text-xs text-slate-400">Metrics from the last hour; values are null when the provider does not return the required data.</p></div><div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-900/70 text-xs uppercase text-slate-400"><tr><th className="px-4 py-3">Service</th><th className="px-4 py-3">Type / Region</th><th className="px-4 py-3">CPU</th><th className="px-4 py-3">Memory</th><th className="px-4 py-3">Requests (1h)</th><th className="px-4 py-3">Latest latency</th></tr></thead><tbody>{data.services.map(s => <tr key={s.id} className="border-t border-slate-700/70"><td className="px-4 py-3"><div className="font-medium text-slate-100">{s.name}</div><div className="font-mono text-[10px] text-slate-500">{s.id}</div>{s.url && <a className="mt-1 inline-flex items-center gap-1 text-xs text-cyan-400" href={s.url} target="_blank" rel="noreferrer">Open service <ExternalLink size={11}/></a>}</td><td className="px-4 py-3 text-slate-300">{s.type || '—'}<div className="text-xs text-slate-500">{s.region || 'Region unavailable'}</div></td><td className="px-4 py-3 font-mono text-slate-100">{fmt(s.cpuPercent)}</td><td className="px-4 py-3 font-mono text-slate-100">{fmt(s.memoryPercent)}</td><td className="px-4 py-3 font-mono text-slate-100">{s.requestCountLastHour == null ? 'Unavailable' : s.requestCountLastHour.toLocaleString()}</td><td className="px-4 py-3 font-mono text-slate-100">{s.latestLatencyMs == null ? 'Unavailable' : `${s.latestLatencyMs.toFixed(1)} ms`}</td></tr>)}</tbody></table></div></section>
+      <section className="rounded-xl border border-slate-700 bg-slate-800/40 p-5"><h2 className="font-semibold text-slate-100">Predictions from real telemetry</h2><p className="mt-1 text-xs text-slate-400">A simple 15-minute linear extrapolation from recent measured points, not a trained or calibrated failure model.</p>{data.predictions.length === 0 ? <p className="mt-4 text-sm text-slate-400">No services currently meet the trend alert threshold, or there are not enough real samples yet.</p> : <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">{data.predictions.map(p => <div key={p.id} className="rounded-lg border border-slate-700 bg-slate-900/50 p-4"><div className="flex items-center justify-between gap-2"><h3 className="text-sm font-semibold text-slate-100">{p.title}</h3><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${p.severity === 'HIGH' ? 'bg-rose-500/10 text-rose-300' : 'bg-amber-500/10 text-amber-300'}`}>{p.severity}</span></div><div className="mt-3 text-sm text-slate-300">Current: {p.currentPercent.toFixed(1)}% → 15-min trend: {p.forecast15MinPercent.toFixed(1)}%</div><p className="mt-2 text-xs text-slate-500">{p.description}</p></div>)}</div>}</section>
+    </>}
+  </div>;
 }
