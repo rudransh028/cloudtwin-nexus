@@ -53,6 +53,7 @@ const navGroups = [
       { name: 'Network', path: '/network', icon: Globe },
       { name: 'Cost Intelligence', path: '/cost', icon: Wallet },
       { name: 'Multi-Cloud', path: '/multicloud', icon: Cloud },
+      { name: 'Cloud Connections', path: '/connections', icon: Cloud },
     ]
   },
   {

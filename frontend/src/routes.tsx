@@ -12,6 +12,7 @@ import KubernetesPage from '@/pages/KubernetesPage';
 import NetworkPage from '@/pages/NetworkPage';
 import CostPage from '@/pages/CostPage';
 import MultiCloudPage from '@/pages/MultiCloudPage';
+import CloudConnectionsPage from '@/pages/CloudConnectionsPage';
 import OptimizerPage from '@/pages/OptimizerPage';
 import ChaosLabPage from '@/pages/ChaosLabPage';
 import ReportsPage from '@/pages/ReportsPage';
@@ -35,6 +36,7 @@ export default function AppRoutes() {
         <Route path="/network" element={<NetworkPage />} />
         <Route path="/cost" element={<CostPage />} />
         <Route path="/multicloud" element={<MultiCloudPage />} />
+        <Route path="/connections" element={<CloudConnectionsPage />} />
         <Route path="/optimizer" element={<OptimizerPage />} />
         <Route path="/chaos" element={<ChaosLabPage />} />
         <Route path="/reports" element={<ReportsPage />} />
