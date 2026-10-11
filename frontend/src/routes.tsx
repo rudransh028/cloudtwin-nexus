@@ -13,6 +13,7 @@ import NetworkPage from '@/pages/NetworkPage';
 import CostPage from '@/pages/CostPage';
 import MultiCloudPage from '@/pages/MultiCloudPage';
 import CloudConnectionsPage from '@/pages/CloudConnectionsPage';
+import PrometheusMetricsPage from '@/pages/PrometheusMetricsPage';
 import OptimizerPage from '@/pages/OptimizerPage';
 import ChaosLabPage from '@/pages/ChaosLabPage';
 import ReportsPage from '@/pages/ReportsPage';
@@ -37,6 +38,7 @@ export default function AppRoutes() {
         <Route path="/cost" element={<CostPage />} />
         <Route path="/multicloud" element={<MultiCloudPage />} />
         <Route path="/connections" element={<CloudConnectionsPage />} />
+        <Route path="/metrics" element={<PrometheusMetricsPage />} />
         <Route path="/optimizer" element={<OptimizerPage />} />
         <Route path="/chaos" element={<ChaosLabPage />} />
         <Route path="/reports" element={<ReportsPage />} />
