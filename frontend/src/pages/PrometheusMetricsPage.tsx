@@ -85,7 +85,7 @@ function ChartCard({ title, data, color, unavailable }: { title: string; data: T
   })), [data]);
   return <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
     <div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="font-semibold text-slate-100">{title}</h2><p className="mt-1 text-xs text-slate-500">Last hour · Prometheus query history</p></div><span className="rounded-full border border-slate-700 px-2 py-1 text-[10px] uppercase tracking-wider text-slate-400">60s step</span></div>
-    {unavailable || !chartData.length ? <div className="flex h-52 flex-col items-center justify-center rounded-xl border border-dashed border-slate-800 text-center"><Activity size={22} className="text-slate-600"/><p className="mt-3 text-sm text-slate-400">History unavailable</p><p className="mt-1 max-w-xs text-xs leading-5 text-slate-600">Configure Node Exporter and wait for enough samples. No chart values are fabricated.</p></div> :
+    {unavailable || !chartData.length ? <div className="flex h-52 flex-col items-center justify-center rounded-xl border border-dashed border-slate-800 text-center"><Activity size={22} className="text-slate-600"/><p className="mt-3 text-sm text-slate-400">History unavailable</p><p className="mt-1 max-w-xs text-xs leading-5 text-slate-600">Host history requires Node Exporter and enough samples. No chart values are fabricated.</p></div> :
       <div className="h-52 w-full"><ResponsiveContainer width="100%" height="100%"><LineChart data={chartData} margin={{ top: 8, right: 6, left: -20, bottom: 0 }}>
         <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" vertical={false}/>
         <XAxis dataKey="time" tick={{ fill: '#64748b', fontSize: 10 }} minTickGap={26} axisLine={false} tickLine={false}/>
@@ -148,6 +148,10 @@ export default function PrometheusMetricsPage() {
     const values = snapshot.resources.map(resource => resource[key]).filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
     return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
   };
+  const containerMemoryBytes = snapshot?.resources.reduce((sum, resource) => sum + (resource.containerMemoryBytes ?? 0), 0) ?? 0;
+  const containerCpuPercent = snapshot?.resources.reduce((sum, resource) => sum + (resource.containerCpuCoresPercent ?? 0), 0) ?? 0;
+  const hasContainerMemory = Boolean(snapshot?.resources.some(resource => resource.containerMemoryBytes != null));
+  const hasContainerCpu = Boolean(snapshot?.resources.some(resource => resource.containerCpuCoresPercent != null));
 
   return <div className="space-y-6 pb-8">
     <div className="flex flex-wrap items-start justify-between gap-4">
@@ -186,11 +190,13 @@ export default function PrometheusMetricsPage() {
     </section>}
 
     {snapshot && <>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <MetricCard title="Scrape targets up" value={`${snapshot.targetsUp} / ${snapshot.targetsTotal}`} detail={snapshot.targetsDown ? `${snapshot.targetsDown} target(s) report down` : snapshot.targetsTotal ? 'All returned targets report healthy' : 'No up series found'} icon={snapshot.targetsDown ? AlertTriangle : CheckCircle2} status={snapshot.targetsDown ? 'warn' : snapshot.targetsTotal ? 'good' : 'neutral'}/>
-        <MetricCard title="CPU utilization" value={fmtPercent(snapshot.averageCpuPercent)} detail="Average of live host CPU series returned by Prometheus" icon={Cpu} status={snapshot.averageCpuPercent != null && snapshot.averageCpuPercent >= 85 ? 'warn' : 'neutral'}/>
-        <MetricCard title="Memory utilization" value={fmtPercent(snapshot.averageMemoryPercent)} detail="Average of live host memory series returned by Prometheus" icon={MemoryStick} status={snapshot.averageMemoryPercent != null && snapshot.averageMemoryPercent >= 90 ? 'warn' : 'neutral'}/>
+        <MetricCard title="Host CPU utilization" value={fmtPercent(snapshot.averageCpuPercent)} detail="Requires Node Exporter; no host value is substituted with container data" icon={Cpu} status={snapshot.averageCpuPercent != null && snapshot.averageCpuPercent >= 85 ? 'warn' : 'neutral'}/>
+        <MetricCard title="Host memory utilization" value={fmtPercent(snapshot.averageMemoryPercent)} detail="Requires Node Exporter; no host value is substituted with container data" icon={MemoryStick} status={snapshot.averageMemoryPercent != null && snapshot.averageMemoryPercent >= 90 ? 'warn' : 'neutral'}/>
         <MetricCard title="Root disk usage" value={fmtPercent(snapshot.averageDiskPercent)} detail="Available only when root filesystem series are exposed" icon={HardDrive} status={snapshot.averageDiskPercent != null && snapshot.averageDiskPercent >= 90 ? 'warn' : 'neutral'}/>
+        <MetricCard title="Container memory" value={hasContainerMemory ? fmtBytes(containerMemoryBytes) : 'Unavailable'} detail="Sum of memory bytes reported by cAdvisor container series" icon={HardDrive} status="neutral"/>
+        <MetricCard title="Container CPU usage" value={hasContainerCpu ? `${containerCpuPercent.toFixed(2)}%` : 'Unavailable'} detail="Container CPU usage as a percentage of one CPU core; not host CPU utilization" icon={Activity} status="neutral"/>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2"><ChartCard title="CPU utilization" data={snapshot.history.cpu || []} color="#22d3ee" unavailable={!snapshot.metricAvailability.cpu}/><ChartCard title="Memory utilization" data={snapshot.history.memory || []} color="#a78bfa" unavailable={!snapshot.metricAvailability.memory}/></div>
