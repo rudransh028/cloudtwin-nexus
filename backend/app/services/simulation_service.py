@@ -15,7 +15,7 @@ class SimulationEngine:
     using M/M/1 queuing theory (W = 1 / (mu - lambda)) and dependency propagation.
     """
 
-    def run_simulation(self, scenario: SimulationScenario) -> Dict[str, Any]:
+    def run_simulation(self, scenario: SimulationScenario, aws_cpu_baseline: float | None = None) -> Dict[str, Any]:
         sim_graph = digital_twin_service.clone_graph()
 
         traffic_mult = scenario.trafficMultiplier if scenario.trafficMultiplier is not None else 1.0
@@ -75,7 +75,7 @@ class SimulationEngine:
             name = data.get("name", node_id)
             orig_status = data.get("status", "healthy")
             base_latency = float(data.get("latency", 10.0))
-            base_cpu = float(data.get("cpu", 40.0))
+            base_cpu = float(aws_cpu_baseline) if aws_cpu_baseline is not None and node_id in ("comp-api", "comp-orders") else float(data.get("cpu", 40.0))
             base_rps = float(data.get("requestRate", 1000.0))
             capacity_rps = float(data.get("capacity_rps", 5000.0))
 
@@ -235,6 +235,7 @@ class SimulationEngine:
         insights = [
             SIMULATION_DISCLAIMER,
             f"Modeled traffic multiplier: {traffic_mult}x",
+            ("AWS CloudWatch CPU baseline applied to API and order-service model components: " + f"{aws_cpu_baseline:.1f}%" if aws_cpu_baseline is not None else "No live AWS CPU baseline supplied; component CPU values use the Digital Twin model."),
         ]
         if applied:
             insights.append("Modeled infrastructure changes: " + ", ".join(applied))

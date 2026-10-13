@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from typing import Dict, Any, List
 from app.services.simulation_service import simulation_engine
+from app.api.aws_metrics import get_aws_ec2_metrics
 from app.services.digital_twin_service import digital_twin_service
 from app.schemas.dtos import SimulationScenario, SimulationResultSchema
 
