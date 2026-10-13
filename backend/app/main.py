@@ -5,6 +5,7 @@ from app.database import engine, Base
 from app.api.dashboard import router as dashboard_router
 from app.api.architecture import router as architecture_router
 from app.api.simulation import router as simulation_router
+from app.api.s3_reports import router as s3_reports_router
 from app.api.intelligence import router as intelligence_router
 from app.api.website_monitor import router as website_monitor_router
 from app.api.real_cloud import router as real_cloud_router
@@ -39,6 +40,7 @@ app.add_middleware(
 app.include_router(dashboard_router, prefix=settings.API_PREFIX)
 app.include_router(architecture_router, prefix=settings.API_PREFIX)
 app.include_router(simulation_router, prefix=settings.API_PREFIX)
+app.include_router(s3_reports_router, prefix=settings.API_PREFIX)
 app.include_router(intelligence_router, prefix=settings.API_PREFIX)
 app.include_router(website_monitor_router, prefix=settings.API_PREFIX)
 app.include_router(real_cloud_router, prefix=settings.API_PREFIX)
