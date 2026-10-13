@@ -102,6 +102,10 @@ class ApiService {
     return this.request<RealCloudCosts>('/real-cloud/costs');
   }
 
+  async getAwsMetrics(hours = 1): Promise<{ connected: boolean; provider: string; source: string; region: string; observedAt: string; windowHours: number; instanceCount: number; instances: Array<{ instanceId: string; name: string; instanceType: string; state: string; availabilityZone?: string; launchTime?: string | null; cpuLatestPercent: number | null; cpuAveragePercent: number | null; cpuMaximumPercent: number | null; cpuHistory: Array<{ timestamp: string; averagePercent: number; maximumPercent: number }>; metricStatus: string }>; note: string }> {
+    return this.request(`/aws/metrics?hours=${hours}`);
+  }
+
   async getComponents(): Promise<Component[]> {
     return this.requestWithFallback('/components', mockComponents);
   }

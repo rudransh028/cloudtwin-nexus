@@ -14,8 +14,10 @@ import {
   Container,
   Globe,
   Activity,
+  PlayCircle,
   Wallet,
   Cloud,
+  CloudCog,
   Cpu,
   Zap,
   FileText,
@@ -30,6 +32,7 @@ const navGroups = [
     title: 'OVERVIEW',
     items: [
       { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+      { name: 'Demo Center', path: '/demo', icon: PlayCircle },
       { name: 'Architecture', path: '/architecture', icon: Network },
       { name: 'Digital Twin', path: '/twin', icon: Copy },
     ]
@@ -55,6 +58,7 @@ const navGroups = [
       { name: 'Multi-Cloud', path: '/multicloud', icon: Cloud },
       { name: 'Cloud Connections', path: '/connections', icon: Cloud },
       { name: 'Live Metrics', path: '/metrics', icon: Activity },
+      { name: 'AWS CloudWatch', path: '/aws-metrics', icon: CloudCog },
     ]
   },
   {

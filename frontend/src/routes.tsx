@@ -19,6 +19,7 @@ import ChaosLabPage from '@/pages/ChaosLabPage';
 import ReportsPage from '@/pages/ReportsPage';
 import SettingsPage from '@/pages/SettingsPage';
 import WebsiteMonitorPage from '@/pages/WebsiteMonitorPage';
+import AwsMetricsPage from '@/pages/AwsMetricsPage';
 
 export default function AppRoutes() {
   return (
@@ -39,6 +40,7 @@ export default function AppRoutes() {
         <Route path="/multicloud" element={<MultiCloudPage />} />
         <Route path="/connections" element={<CloudConnectionsPage />} />
         <Route path="/metrics" element={<PrometheusMetricsPage />} />
+        <Route path="/aws-metrics" element={<AwsMetricsPage />} />
         <Route path="/optimizer" element={<OptimizerPage />} />
         <Route path="/chaos" element={<ChaosLabPage />} />
         <Route path="/reports" element={<ReportsPage />} />

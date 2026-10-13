@@ -8,6 +8,7 @@ from app.api.simulation import router as simulation_router
 from app.api.intelligence import router as intelligence_router
 from app.api.website_monitor import router as website_monitor_router
 from app.api.real_cloud import router as real_cloud_router
+from app.api.aws_metrics import router as aws_metrics_router
 from app.api.cloud_connections import router as cloud_connections_router
 from app.api.prometheus_monitoring import router as prometheus_monitoring_router
 from app.api.telemetry import router as telemetry_router, collect_http_telemetry
@@ -41,6 +42,7 @@ app.include_router(simulation_router, prefix=settings.API_PREFIX)
 app.include_router(intelligence_router, prefix=settings.API_PREFIX)
 app.include_router(website_monitor_router, prefix=settings.API_PREFIX)
 app.include_router(real_cloud_router, prefix=settings.API_PREFIX)
+app.include_router(aws_metrics_router, prefix=settings.API_PREFIX)
 app.include_router(cloud_connections_router, prefix=settings.API_PREFIX)
 app.include_router(prometheus_monitoring_router, prefix=settings.API_PREFIX)
 app.include_router(telemetry_router, prefix=settings.API_PREFIX)
