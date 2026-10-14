@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     AWS_REGION: str = "ap-south-1"
     AWS_ACCESS_KEY_ID: Optional[str] = None
     AWS_SECRET_ACCESS_KEY: Optional[str] = None
+    # Fernet key used only to encrypt saved multi-account AWS credentials.
+    AWS_CONNECTION_ENCRYPTION_KEY: Optional[str] = None
 
     # Telemetry interval in seconds
     TELEMETRY_INTERVAL: int = 5

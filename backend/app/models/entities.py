@@ -81,6 +81,27 @@ class AnalysisFinding(Base):
     status = Column(String, default="open")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
+class AwsAccountConnection(Base):
+    """Saved AWS account connection. Access keys are Fernet-encrypted at rest.
+
+    There is no per-user authentication in this project, so every saved
+    connection is shared with anyone who can reach these API endpoints.
+    """
+    __tablename__ = "aws_account_connections"
+
+    id = Column(String, primary_key=True, default=gen_uuid)
+    name = Column(String, nullable=False)
+    account_id = Column(String, nullable=False)
+    region = Column(String, nullable=False)
+    status = Column(String, default="validated")
+    encrypted_access_key_id = Column(Text, nullable=False)
+    encrypted_secret_access_key = Column(Text, nullable=False)
+    instance_count = Column(Integer, nullable=True)
+    last_error = Column(Text, nullable=True)
+    last_checked_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+
 class PredictionRecord(Base):
     __tablename__ = "predictions"
 

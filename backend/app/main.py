@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, Base
+from app.models.entities import AwsAccountConnection  # noqa: F401 — register table for create_all
 from app.api.dashboard import router as dashboard_router
 from app.api.architecture import router as architecture_router
 from app.api.simulation import router as simulation_router
